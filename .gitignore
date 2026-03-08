@@ -1,0 +1,32 @@
+﻿# Home Assistant runtime/state
+.storage/
+.cloud/
+deps/
+.cache/
+
+# Databases
+*.db
+*.db-*
+*.db.tmp*
+
+# Logs and crash files
+home-assistant.log
+home-assistant.log.*
+*.log
+*.log.*
+*.fault
+
+# Locks and temp
+*.lock
+*.tmp
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local backups / editor artifacts
+_pre_sync_backup_*/
+~$*
+
+# Sensitive
+secrets.yaml

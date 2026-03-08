@@ -1,0 +1,30 @@
+# ===== Heizung: Raum Schlafzimmer (Package) =====
+
+input_boolean:
+  heizung_schlafzimmer:
+    name: Heizung Schlafzimmer
+  nachtabsenkung_schlafzimmer:
+    name: Nachtabsenkung Schlafzimmer
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Schlafzimmer (extern)
+    unique_id: heizung_schlafzimmer_extern_pkg
+    heater: input_boolean.heizung_schlafzimmer
+    target_sensor: sensor.thermometer_schlafzimmer_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.thermometer_schlafzimmer_temperature:
+      display_precision: 1
+    sensor.thermometer_schlafzimmer_humidity:
+      display_precision: 1

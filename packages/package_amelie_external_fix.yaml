@@ -1,0 +1,169 @@
+# ===== Heizung: Raum Amelie (Package) =====
+
+input_boolean:
+  heizung_amelie:
+    name: Heizung Amelie
+  nachtabsenkung_amelie:
+    name: Nachtabsenkung Amelie
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Amelie (extern)
+    unique_id: heizung_amelie_extern_pkg
+    heater: input_boolean.heizung_amelie
+    target_sensor: sensor.thermometer_amelie_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    # feinere Hysterese: bei ~0.2°C Abweichung reagieren
+    cold_tolerance: 0.2
+    hot_tolerance: 0.2
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.thermometer_amelie_temperature:
+      display_precision: 1
+    sensor.thermometer_amelie_humidity:
+      display_precision: 1
+
+automation:
+
+  # --- 1) TRV dauerhaft auf externen Sensor stellen -------------------------
+  - id: amelie_enforce_external_sensor_select
+    alias: "Amelie – TRV auf externen Sensor stellen"
+    mode: single
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id: climate.thermostat_amelie
+        from: 'unavailable'
+      - platform: state
+        entity_id: select.thermostat_amelie_temperature_sensor_select
+    condition:
+      - condition: template
+        value_template: >
+          {{ states('select.thermostat_amelie_temperature_sensor_select') != 'external_3' }}
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.thermostat_amelie_temperature_sensor_select
+        data:
+          option: external_3
+
+  # --- 2) Externe Temperatur ins TRV injizieren ----------------------------
+  - id: amelie_inject_external_temp
+    alias: "Amelie – Externe Raumtemperatur ins TRV injizieren"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: sensor.thermometer_amelie_temperature
+        for: "00:00:10"
+      - platform: time_pattern
+        seconds: "/60"
+    condition:
+      - condition: template
+        value_template: >
+          {% set t = states('sensor.thermometer_amelie_temperature')|float(none) %}
+          {% set n = states('number.thermostat_amelie_external_temperature_input')|float(none) %}
+          {{ t is number and n is number and (t - n)|abs > 0.1 }}
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.thermostat_amelie_external_temperature_input
+        data:
+          value: "{{ states('sensor.thermometer_amelie_temperature')|float|round(1) }}"
+
+  # --- 3) TRV im Modus HEAT halten (grundsätzlich) -------------------------
+  - id: amelie_trv_keep_heat
+    alias: "Amelie – TRV im Modus HEAT halten"
+    mode: restart
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id: climate.thermostat_amelie
+        from: 'unavailable'
+    action:
+      - service: climate.set_hvac_mode
+        target:
+          entity_id: climate.thermostat_amelie
+        data:
+          hvac_mode: heat
+
+  # --- 4) Sollwert vom Generic -> TRV spiegeln -----------------------------
+  - id: amelie_setpoint_generic_to_trv
+    alias: "Amelie – Solltemperatur Generic → TRV"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.heizung_amelie_extern
+        attribute: temperature
+    action:
+      - variables:
+          step: "{{ state_attr('climate.thermostat_amelie','target_temp_step')|float(0.5) }}"
+          t: "{{ state_attr('climate.heizung_amelie_extern','temperature')|float }}"
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.thermostat_amelie
+        data:
+          temperature: "{{ ((t/step)|round(0) * step) | round(1) }}"
+
+  # --- 5) Fenster-Logik nur für Amelie ------------------------------------
+  # Fenster auf  -> alles aus + TRV auf 5°C parken
+  # Fenster zu   -> nach 2 min wieder heat + Sollwert vom Generic zurück
+  - id: amelie_window_pause_resume
+    alias: "Amelie – Fenster auf/zu → Heizung pausieren/fortsetzen"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.fenstersensor_amelie_contact
+        to: "on"
+      - platform: state
+        entity_id: binary_sensor.fenstersensor_amelie_contact
+        to: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.fenstersensor_amelie_contact
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target:
+                  entity_id:
+                    - climate.heizung_amelie_extern
+                    - climate.thermostat_amelie
+                data:
+                  hvac_mode: "off"
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.thermostat_amelie
+                data:
+                  temperature: 5
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.fenstersensor_amelie_contact
+                state: "off"
+            sequence:
+              - delay: "00:02:00"
+              - condition: state
+                entity_id: binary_sensor.fenstersensor_amelie_contact
+                state: "off"
+              - service: climate.set_hvac_mode
+                target:
+                  entity_id:
+                    - climate.heizung_amelie_extern
+                    - climate.thermostat_amelie
+                data:
+                  hvac_mode: heat
+              - service: climate.set_temperature
+                target:
+                  entity_id: climate.thermostat_amelie
+                data:
+                  temperature: "{{ state_attr('climate.heizung_amelie_extern','temperature')|float }}"
+      - default: []

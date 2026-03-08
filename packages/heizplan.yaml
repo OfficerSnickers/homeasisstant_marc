@@ -1,0 +1,39 @@
+# ===== Heizplan / Nachtabsenkung (Package) =====
+
+input_datetime:
+  heizung_nacht_start:
+    name: Heizung Nacht Start
+    has_date: false
+    has_time: true
+    initial: "22:00:00"   # Standard: aus ab 22:00
+  heizung_nacht_ende:
+    name: Heizung Nacht Ende
+    has_date: false
+    has_time: true
+    initial: "05:30:00"   # Standard: wieder an um 05:30
+
+input_boolean:
+  nachtabsenkung_wohnzimmer:
+    name: Wohnzimmer Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_schlafzimmer:
+    name: Schlafzimmer Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_ankleidezimmer:
+    name: Ankleidezimmer Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_kueche:
+    name: Küche Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_amelie:
+    name: Amelie Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_esszimmer:
+    name: Esszimmer Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_badezimmer:
+    name: Badezimmer Nachtabsenkung aktiv
+    icon: mdi:radiator-off
+  nachtabsenkung_justus:
+    name: Justus Nachtabsenkung aktiv
+    icon: mdi:radiator-off

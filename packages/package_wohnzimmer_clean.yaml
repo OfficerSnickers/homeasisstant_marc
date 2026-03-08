@@ -1,0 +1,29 @@
+# ===== Heizung: Raum Wohnzimmer (Package) — CLEANED (einzige Definition) =====
+input_boolean:
+  heizung_wohnzimmer:
+    name: Heizung Wohnzimmer
+  nachtabsenkung_wohnzimmer:
+    name: Nachtabsenkung Wohnzimmer
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Wohnzimmer (extern)
+    unique_id: heizung_wohnzimmer_extern_pkg
+    heater: input_boolean.heizung_wohnzimmer
+    target_sensor: sensor.0x00124b002fa14d14_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.0x00124b002fa14d14_temperature:
+      display_precision: 1
+    sensor.0x00124b002fa14d14_humidity:
+      display_precision: 1

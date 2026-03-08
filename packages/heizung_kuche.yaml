@@ -1,0 +1,30 @@
+# ===== Heizung: Raum Küche (Package) =====
+
+input_boolean:
+  heizung_kuche:
+    name: Heizung Küche
+  nachtabsenkung_kuche:
+    name: Nachtabsenkung Küche
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Küche (extern)
+    unique_id: heizung_kuche_extern_pkg
+    heater: input_boolean.heizung_kuche
+    target_sensor: sensor.thermometer_kuche_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.thermometer_kuche_temperature:
+      display_precision: 1
+    sensor.thermometer_kuche_humidity:
+      display_precision: 1

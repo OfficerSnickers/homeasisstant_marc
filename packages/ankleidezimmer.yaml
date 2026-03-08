@@ -1,0 +1,26 @@
+# ===== Heizung: Raum Wohnzimmer (Package) =====
+
+input_boolean:
+  heizung_ankleidezimmer:
+    name: Heizung Ankleidezimmer
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Ankleidezimmer (extern)
+    heater: input_boolean.heizung_ankleidezimmer
+    target_sensor: sensor.thermometer_ankleidezimmer_temperature   # <- echter Temperatursensor
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+     
+homeassistant:
+  customize:
+    sensor.thermometer_ankleidezimmer_temperature:
+      display_precision: 1
+    sensor.thermometer_ankleidezimmer_humidity:
+      display_precision: 1

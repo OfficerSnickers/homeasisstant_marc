@@ -1,0 +1,1656 @@
+
+# ==========================
+#  Heizung – Vollständige Automationsdatei
+#  Stand: 2025-12-21
+#  Räume: Wohnzimmer, Schlafzimmer, Küche, Esszimmer, Badezimmer, Ankleidezimmer, Amelie, Justus
+#  Anforderungen:
+#   - Externer Fühler erzwingen + Temperatur injizieren
+#   - Generic (extern) <-> TRV: Modus + Solltemperatur spiegeln
+#   - Fenster-Logik (Pause/Resume) pro Raum (außer Justus, kein Fensterkontakt)
+#   - Beim Start alle Generic auf HEAT
+#   - Push bei > 25°C
+# ==========================
+
+# ------------------------
+# HELFER: STARTUP – alle externen Regler auf HEAT
+# ------------------------
+- id: heizung_startup_generic_heat
+  alias: "Heizung – Startup: alle externen Regler auf HEAT"
+  mode: single
+  trigger:
+    - platform: homeassistant
+      event: start
+  action:
+    - service: climate.set_hvac_mode
+      target:
+        entity_id:
+          - climate.heizung_wohnzimmer_extern
+          - climate.heizung_schlafzimmer_extern
+          - climate.heizung_kuche_extern
+          - climate.heizung_esszimmer_extern
+          - climate.heizung_badezimmer_extern
+          - climate.heizung_ankleidezimmer_extern
+          - climate.heizung_amelie_extern
+          - climate.heizung_justus_extern
+      data:
+        hvac_mode: heat
+
+# ======================================================================
+#  BLOCK: PRO RAUM – externe Fühler erzwingen + injizieren + Sync + Fenster
+# ======================================================================
+
+# ------------------------
+# WOHNZIMMER
+# ------------------------
+
+# 1) TRV: externen Sensor erzwingen + externe Temperatur injizieren
+- id: wz_trv_external_enforce
+  alias: "Wohnzimmer – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.0x00124b002fa14d14_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  condition: []
+  action:
+    - variables:
+        sel: "select.thermostat_wohnzimmer_temperature_sensor_select"
+        num: "number.thermostat_wohnzimmer_external_temperature_input"
+        ext: "{{ states('sensor.0x00124b002fa14d14_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_wohnzimmer_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_wohnzimmer_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions:
+            - condition: template
+              value_template: "{{ 'external' in opts }}"
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions:
+            - condition: template
+              value_template: "{{ 'external_2' in opts }}"
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions:
+            - condition: template
+              value_template: "{{ 'external_3' in opts }}"
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data:
+        value: "{{ ext | round(1) }}"
+
+# 2) Modus-Sync: Generic <-> TRV
+- id: wz_sync_mode
+  alias: "Wohnzimmer – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_wohnzimmer
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_wohnzimmer_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+      state: "off"
+  action:
+    - choose:
+        # TRV -> Generic
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.thermostat_wohnzimmer' }}"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: template
+                      value_template: "{{ states('climate.thermostat_wohnzimmer') == 'off' and states('climate.heizung_wohnzimmer_extern') != 'off' }}"
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_wohnzimmer_extern }
+                      data: { hvac_mode: "off" }
+                - conditions:
+                    - condition: template
+                      value_template: "{{ states('climate.thermostat_wohnzimmer') != 'off' and states('climate.heizung_wohnzimmer_extern') != 'heat' }}"
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_wohnzimmer_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        # Generic -> TRV
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_wohnzimmer_extern' }}"
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: state
+                      entity_id: climate.heizung_wohnzimmer_extern
+                      state: "off"
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_wohnzimmer }
+                      data: { hvac_mode: "off" }
+                - conditions:
+                    - condition: state
+                      entity_id: climate.heizung_wohnzimmer_extern
+                      state: "heat"
+                  sequence:
+                    - choose:
+                        - conditions:
+                            - condition: template
+                              value_template: "{{ 'heat' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.thermostat_wohnzimmer }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions:
+                                - condition: template
+                                  value_template: "{{ 'auto' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.thermostat_wohnzimmer }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.thermostat_wohnzimmer }
+              default: []
+      default: []
+
+# 3) Temperatur-Sync (beide Richtungen, mit Toleranz & Schrittweite)
+- id: wz_sync_temp
+  alias: "Wohnzimmer – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_wohnzimmer
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_wohnzimmer_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.thermostat_wohnzimmer','temperature') %}
+        {% set gen = state_attr('climate.heizung_wohnzimmer_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        # TRV -> Generic
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.thermostat_wohnzimmer' }}"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_wohnzimmer_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.thermostat_wohnzimmer','temperature')|float %}
+                  {{ trv | round(1) }}
+        # Generic -> TRV (nur wenn Generic = HEAT)
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_wohnzimmer_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_wohnzimmer_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_wohnzimmer }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.thermostat_wohnzimmer','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_wohnzimmer_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+      default: []
+
+# 4) Fenster-Logik: Pause/Resume
+- id: wz_window_pause_resume
+  alias: "Wohnzimmer – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        # Fenster AUF
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'on' }}"
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.thermostat_wohnzimmer }
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_wohnzimmer }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_wohnzimmer_extern }
+              data: { hvac_mode: "off" }
+        # Fenster ZU
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'off' }}"
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_wohnzimmer_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions:
+                    - condition: template
+                      value_template: "{{ 'heat' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_wohnzimmer }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ 'auto' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_wohnzimmer }
+                      data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.thermostat_wohnzimmer }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_wohnzimmer_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_wohnzimmer }
+              data:
+                temperature: "{{ state_attr('climate.heizung_wohnzimmer_extern','temperature') }}"
+
+
+# ------------------------
+# SCHLAFZIMMER
+# ------------------------
+
+- id: sz_trv_external_enforce
+  alias: "Schlafzimmer – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_schlafzimmer_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.thermostat_schlafzimmer_temperature_sensor_select"
+        num: "number.thermostat_schlafzimmer_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_schlafzimmer_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_schlafzimmer_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_schlafzimmer_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: sz_sync_mode
+  alias: "Schlafzimmer – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_schlafzimmer
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_schlafzimmer_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_schlafzimmer_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_schlafzimmer' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_schlafzimmer') == 'off' and states('climate.heizung_schlafzimmer_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_schlafzimmer_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_schlafzimmer') != 'off' and states('climate.heizung_schlafzimmer_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_schlafzimmer_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_schlafzimmer_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_schlafzimmer_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_schlafzimmer }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_schlafzimmer_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.thermostat_schlafzimmer }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.thermostat_schlafzimmer }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.thermostat_schlafzimmer }
+              default: []
+      default: []
+
+- id: sz_sync_temp
+  alias: "Schlafzimmer – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_schlafzimmer
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_schlafzimmer_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_schlafzimmer_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.thermostat_schlafzimmer','temperature') %}
+        {% set gen = state_attr('climate.heizung_schlafzimmer_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_schlafzimmer' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_schlafzimmer_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.thermostat_schlafzimmer','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_schlafzimmer_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_schlafzimmer_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_schlafzimmer }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.thermostat_schlafzimmer','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_schlafzimmer_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+
+- id: sz_window_pause_resume
+  alias: "Schlafzimmer – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_schlafzimmer_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.thermostat_schlafzimmer }
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_schlafzimmer }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_schlafzimmer_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_schlafzimmer_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_schlafzimmer_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_schlafzimmer }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.thermostat_schlafzimmer }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.thermostat_schlafzimmer }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_schlafzimmer_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_schlafzimmer }
+              data:
+                temperature: "{{ state_attr('climate.heizung_schlafzimmer_extern','temperature') }}"
+
+
+# ------------------------
+# KÜCHE
+# ------------------------
+
+- id: k_trv_external_enforce
+  alias: "Küche – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_kuche_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.kuche_thermostat_temperature_sensor_select"
+        num: "number.kuche_thermostat_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_kuche_temperature') | float(999) }}"
+        cur: "{{ states('number.kuche_thermostat_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.kuche_thermostat_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: k_sync_mode
+  alias: "Küche – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.kuche_thermostat
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_kuche_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_kuche_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.kuche_thermostat' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.kuche_thermostat') == 'off' and states('climate.heizung_kuche_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_kuche_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.kuche_thermostat') != 'off' and states('climate.heizung_kuche_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_kuche_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_kuche_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_kuche_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.kuche_thermostat }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_kuche_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.kuche_thermostat }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.kuche_thermostat }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.kuche_thermostat }
+              default: []
+      default: []
+
+- id: k_sync_temp
+  alias: "Küche – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.kuche_thermostat
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_kuche_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_kuche_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.kuche_thermostat','temperature') %}
+        {% set gen = state_attr('climate.heizung_kuche_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.kuche_thermostat' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_kuche_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.kuche_thermostat','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_kuche_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_kuche_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.kuche_thermostat }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.kuche_thermostat','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_kuche_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+- id: k_window_pause_resume
+  alias: "Küche – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_kuche_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.kuche_thermostat }
+            - service: climate.set_temperature
+              target: { entity_id: climate.kuche_thermostat }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_kuche_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_kuche_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_kuche_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.kuche_thermostat }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.kuche_thermostat }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.kuche_thermostat }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_kuche_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.kuche_thermostat }
+              data:
+                temperature: "{{ state_attr('climate.heizung_kuche_extern','temperature') }}"
+
+
+# ------------------------
+# ESSZIMMER
+# ------------------------
+
+- id: ez_trv_external_enforce
+  alias: "Esszimmer – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_esszimmer_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.thermostat_esszimmer_temperature_sensor_select"
+        num: "number.thermostat_esszimmer_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_esszimmer_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_esszimmer_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_esszimmer_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: ez_sync_mode
+  alias: "Esszimmer – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_esszimmer
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_esszimmer_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_esszimmer_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_esszimmer' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_esszimmer') == 'off' and states('climate.heizung_esszimmer_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_esszimmer_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_esszimmer') != 'off' and states('climate.heizung_esszimmer_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_esszimmer_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_esszimmer_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_esszimmer_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_esszimmer }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_esszimmer_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.thermostat_esszimmer }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.thermostat_esszimmer }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.thermostat_esszimmer }
+              default: []
+      default: []
+
+- id: ez_sync_temp
+  alias: "Esszimmer – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_esszimmer
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_esszimmer_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_esszimmer_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.thermostat_esszimmer','temperature') %}
+        {% set gen = state_attr('climate.heizung_esszimmer_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_esszimmer' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_esszimmer_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.thermostat_esszimmer','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_esszimmer_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_esszimmer_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_esszimmer }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.thermostat_esszimmer','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_esszimmer_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+- id: ez_window_pause_resume
+  alias: "Esszimmer – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_esszimmer_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.thermostat_esszimmer }
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_esszimmer }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_esszimmer_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_esszimmer_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_esszimmer_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_esszimmer }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.thermostat_esszimmer }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.thermostat_esszimmer }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_esszimmer_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_esszimmer }
+              data:
+                temperature: "{{ state_attr('climate.heizung_esszimmer_extern','temperature') }}"
+
+
+# ------------------------
+# BADEZIMMER
+# ------------------------
+
+- id: bad_trv_external_enforce
+  alias: "Badezimmer – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_badeztimmer_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.thermostat_badezimmer_temperature_sensor_select"
+        num: "number.thermostat_badezimmer_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_badeztimmer_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_badezimmer_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_badezimmer_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: bad_sync_mode
+  alias: "Badezimmer – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_badezimmer
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_badezimmer_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_badezimmer_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_badezimmer' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_badezimmer') == 'off' and states('climate.heizung_badezimmer_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_badezimmer_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_badezimmer') != 'off' and states('climate.heizung_badezimmer_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_badezimmer_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_badezimmer_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_badezimmer_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_badezimmer }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_badezimmer_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.thermostat_badezimmer }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.thermostat_badezimmer }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.thermostat_badezimmer }
+              default: []
+      default: []
+
+- id: bad_sync_temp
+  alias: "Badezimmer – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_badezimmer
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_badezimmer_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_badezimmer_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.thermostat_badezimmer','temperature') %}
+        {% set gen = state_attr('climate.heizung_badezimmer_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_badezimmer' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_badezimmer_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.thermostat_badezimmer','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_badezimmer_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_badezimmer_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_badezimmer }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.thermostat_badezimmer','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_badezimmer_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+- id: bad_window_pause_resume
+  alias: "Badezimmer – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_badezimmer_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.thermostat_badezimmer }
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_badezimmer }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_badezimmer_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_badezimmer_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_badezimmer_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_badezimmer }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.thermostat_badezimmer }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.thermostat_badezimmer }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_badezimmer_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_badezimmer }
+              data:
+                temperature: "{{ state_attr('climate.heizung_badezimmer_extern','temperature') }}"
+
+
+# ------------------------
+# ANKLEIDEZIMMER
+# ------------------------
+
+- id: akl_trv_external_enforce
+  alias: "Ankleidezimmer – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_ankleidezimmer_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.thermostat_ankleidezimmer_temperature_sensor_select"
+        num: "number.thermostat_ankleidezimmer_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_ankleidezimmer_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_ankleidezimmer_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_ankleidezimmer_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: akl_sync_mode
+  alias: "Ankleidezimmer – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.ankleidezimmer
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_ankleidezimmer_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_ankleidezimmer_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.ankleidezimmer' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.ankleidezimmer') == 'off' and states('climate.heizung_ankleidezimmer_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.ankleidezimmer') != 'off' and states('climate.heizung_ankleidezimmer_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_ankleidezimmer_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_ankleidezimmer_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.ankleidezimmer }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_ankleidezimmer_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.ankleidezimmer }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.ankleidezimmer }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.ankleidezimmer }
+              default: []
+      default: []
+
+- id: akl_sync_temp
+  alias: "Ankleidezimmer – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.ankleidezimmer
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_ankleidezimmer_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenster_ankleidezimmer_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.ankleidezimmer','temperature') %}
+        {% set gen = state_attr('climate.heizung_ankleidezimmer_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.ankleidezimmer' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_ankleidezimmer_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.ankleidezimmer','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_ankleidezimmer_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_ankleidezimmer_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.ankleidezimmer }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.ankleidezimmer','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_ankleidezimmer_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+- id: akl_window_pause_resume
+  alias: "Ankleidezimmer – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenster_ankleidezimmer_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.ankleidezimmer }
+            - service: climate.set_temperature
+              target: { entity_id: climate.ankleidezimmer }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_ankleidezimmer_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenster_ankleidezimmer_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_ankleidezimmer_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.ankleidezimmer }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.ankleidezimmer }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.ankleidezimmer }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_ankleidezimmer_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.ankleidezimmer }
+              data:
+                temperature: "{{ state_attr('climate.heizung_ankleidezimmer_extern','temperature') }}"
+
+
+# ------------------------
+# AMELIE
+# ------------------------
+
+- id: am_trv_external_enforce
+  alias: "Amelie – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_amelie_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.thermostat_amelie_temperature_sensor_select"
+        num: "number.thermostat_amelie_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_amelie_temperature') | float(999) }}"
+        cur: "{{ states('number.thermostat_amelie_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.thermostat_amelie_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: am_sync_mode
+  alias: "Amelie – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_amelie
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_amelie_extern
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenstersensor_amelie_contact
+      state: "off"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_amelie' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_amelie') == 'off' and states('climate.heizung_amelie_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_amelie_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.thermostat_amelie') != 'off' and states('climate.heizung_amelie_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_amelie_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_amelie_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_amelie_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_amelie }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_amelie_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.thermostat_amelie }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.thermostat_amelie }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.thermostat_amelie }
+              default: []
+      default: []
+
+- id: am_sync_temp
+  alias: "Amelie – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.thermostat_amelie
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_amelie_extern
+      attribute: temperature
+      for: "00:00:02"
+  condition:
+    - condition: state
+      entity_id: binary_sensor.fenstersensor_amelie_contact
+      state: "off"
+    - condition: template
+      value_template: >
+        {% set trv = state_attr('climate.thermostat_amelie','temperature') %}
+        {% set gen = state_attr('climate.heizung_amelie_extern','temperature') %}
+        {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.2 }}
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.thermostat_amelie' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_amelie_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.thermostat_amelie','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_amelie_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_amelie_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_amelie }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.thermostat_amelie','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_amelie_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+- id: am_window_pause_resume
+  alias: "Amelie – Fenster Pause/Resume"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.fenstersensor_amelie_contact
+      to: ["on","off"]
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
+          sequence:
+            - service: climate.turn_off
+              target: { entity_id: climate.thermostat_amelie }
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_amelie }
+              data: { temperature: 5 }
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_amelie_extern }
+              data: { hvac_mode: "off" }
+        - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'off' }}" } ]
+          sequence:
+            - delay: "00:02:00"
+            - condition: state
+              entity_id: binary_sensor.fenstersensor_amelie_contact
+              state: "off"
+            - service: climate.set_hvac_mode
+              target: { entity_id: climate.heizung_amelie_extern }
+              data: { hvac_mode: heat }
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.thermostat_amelie }
+                      data: { hvac_mode: heat }
+              default:
+                - choose:
+                    - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}" } ]
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target: { entity_id: climate.thermostat_amelie }
+                          data: { hvac_mode: auto }
+                  default:
+                    - service: climate.turn_on
+                      target: { entity_id: climate.thermostat_amelie }
+            - condition: template
+              value_template: >
+                {% set t = state_attr('climate.heizung_amelie_extern','temperature') %}
+                {{ t is number }}
+            - service: climate.set_temperature
+              target: { entity_id: climate.thermostat_amelie }
+              data:
+                temperature: "{{ state_attr('climate.heizung_amelie_extern','temperature') }}"
+
+
+# ------------------------
+# JUSTUS (kein Fensterkontakt)
+# ------------------------
+
+- id: ju_trv_external_enforce
+  alias: "Justus – TRV externer Sensor & Temperatur injizieren"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: sensor.thermometer_justus_temperature
+    - platform: time_pattern
+      minutes: "/2"
+  action:
+    - variables:
+        sel: "select.0x0cae5ffffed0cb38_temperature_sensor_select"
+        num: "number.0x0cae5ffffed0cb38_external_temperature_input"
+        ext: "{{ states('sensor.thermometer_justus_temperature') | float(999) }}"
+        cur: "{{ states('number.0x0cae5ffffed0cb38_external_temperature_input') | float(999) }}"
+        opts: "{{ state_attr('select.0x0cae5ffffed0cb38_temperature_sensor_select','options') or [] }}"
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ 'external' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_2' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_2" }
+        - conditions: [ { condition: template, value_template: "{{ 'external_3' in opts }}" } ]
+          sequence:
+            - service: select.select_option
+              target: { entity_id: "{{ sel }}" }
+              data: { option: "external_3" }
+      default: []
+    - condition: template
+      value_template: "{{ ext != 999 and cur != 999 and (ext - cur) | abs > 0.1 }}"
+    - service: number.set_value
+      target: { entity_id: "{{ num }}" }
+      data: { value: "{{ ext | round(1) }}" }
+
+- id: ju_sync_mode
+  alias: "Justus – Sync TRV↔Generic Modus"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.0x0cae5ffffed0cb38xx
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_justus_extern
+      for: "00:00:02"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.0x0cae5ffffed0cb38xx' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: template, value_template: "{{ states('climate.0x0cae5ffffed0cb38xx') == 'off' and states('climate.heizung_justus_extern') != 'off' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_justus_extern }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: template, value_template: "{{ states('climate.0x0cae5ffffed0cb38xx') != 'off' and states('climate.heizung_justus_extern') != 'heat' }}" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.heizung_justus_extern }
+                      data: { hvac_mode: heat }
+              default: []
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.heizung_justus_extern' }}" } ]
+          sequence:
+            - choose:
+                - conditions: [ { condition: state, entity_id: climate.heizung_justus_extern, state: "off" } ]
+                  sequence:
+                    - service: climate.set_hvac_mode
+                      target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                      data: { hvac_mode: "off" }
+                - conditions: [ { condition: state, entity_id: climate.heizung_justus_extern, state: "heat" } ]
+                  sequence:
+                    - choose:
+                        - conditions: [ { condition: template, value_template: "{{ 'heat' in (state_attr('climate.0x0cae5ffffed0cb38xx','hvac_modes') or []) }}" } ]
+                          sequence:
+                            - service: climate.set_hvac_mode
+                              target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                              data: { hvac_mode: heat }
+                      default:
+                        - choose:
+                            - conditions: [ { condition: template, value_template: "{{ 'auto' in (state_attr('climate.0x0cae5ffffed0cb38xx','hvac_modes') or []) }}" } ]
+                              sequence:
+                                - service: climate.set_hvac_mode
+                                  target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                                  data: { hvac_mode: auto }
+                          default:
+                            - service: climate.turn_on
+                              target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+              default: []
+      default: []
+
+- id: ju_sync_temp
+  alias: "Justus – Sync TRV↔Generic Temperatur"
+  mode: restart
+  trigger:
+    - platform: state
+      entity_id: climate.0x0cae5ffffed0cb38xx
+      attribute: temperature
+      for: "00:00:02"
+    - platform: state
+      entity_id: climate.heizung_justus_extern
+      attribute: temperature
+      for: "00:00:02"
+  action:
+    - choose:
+        - conditions: [ { condition: template, value_template: "{{ trigger.entity_id == 'climate.0x0cae5ffffed0cb38xx' }}" } ]
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.heizung_justus_extern }
+              data:
+                temperature: >
+                  {% set trv = state_attr('climate.0x0cae5ffffed0cb38xx','temperature')|float %}
+                  {{ trv | round(1) }}
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.entity_id == 'climate.heizung_justus_extern' }}"
+            - condition: state
+              entity_id: climate.heizung_justus_extern
+              state: "heat"
+          sequence:
+            - service: climate.set_temperature
+              target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+              data:
+                temperature: >
+                  {% set step = state_attr('climate.0x0cae5ffffed0cb38xx','target_temp_step')|float(0.5) %}
+                  {% set t = state_attr('climate.heizung_justus_extern','temperature')|float %}
+                  {{ ((t/step)|round(0) * step) | round(1) }}
+
+
+# ------------------------
+# GLOBAL: Warnung > 25 °C (nur an Marc)
+# ------------------------
+- id: warnung_ueber_25c
+  alias: "Warnung: Raum über 25°C"
+  mode: single
+  trigger:
+    - platform: numeric_state
+      entity_id:
+        - sensor.thermometer_amelie_temperature
+        - sensor.thermometer_ankleidezimmer_temperature
+        - sensor.thermometer_badeztimmer_temperature
+        - sensor.thermometer_esszimmer_temperature
+        - sensor.thermometer_justus_temperature
+        - sensor.thermometer_kuche_temperature
+        - sensor.thermometer_schlafzimmer_temperature
+        - sensor.0x00124b002fa14d14_temperature
+      above: 25
+  action:
+    - variables:
+        raum: "{{ trigger.to_state.name }}"
+        temp: "{{ trigger.to_state.state }}"
+    - service: notify.mobile_app_iphone_16_pro_max_marc
+      data:
+        message: "🔥 {{ raum }} hat {{ temp }} °C erreicht. Bitte prüfen/lüften."

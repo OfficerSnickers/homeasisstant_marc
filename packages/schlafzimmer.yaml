@@ -1,0 +1,90 @@
+# ===== Package: Heizung Schlafzimmer – Externer Sensor erzwingen & injizieren =====
+# Dieses Paket sorgt dafür, dass das TRV im Schlafzimmer IMMER den externen Temperatursensor nutzt
+# und dessen Temperatur in die Zahl-Entität injiziert. Außerdem wird regelmäßig geprüft und ggf. resynchronisiert.
+
+###############################################################################
+# VORAUSSETZUNGEN (gemäß deiner Entitäten):
+# - Externes Thermometer (Sensor):   sensor.thermometer_schlafzimmer_temperature
+# - TRV Auswahl (Select):            select.thermostat_schlafzimmer_temperature_sensor_select
+# - TRV ext. Temp Eingabe (Number):  number.thermostat_schlafzimmer_external_temperature_input
+# - TRV (Climate, Info-only hier):   climate.thermostat_schlafzimmer
+###############################################################################
+
+automation:
+
+  # 1) Beim Start von HA + alle 10 Minuten: immer auf "external_2" setzen (manche TRVs springen nach Updates/Neustarts zurück)
+  - id: schlafzimmer_force_external_sensor_on_start
+    alias: "Schlafzimmer – TRV externen Sensor erzwingen (Start & zyklisch)"
+    mode: single
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: time_pattern
+        minutes: "/10"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('select.thermostat_schlafzimmer_temperature_sensor_select') not in ['external_2','external','external_3'] }}
+            sequence:
+              - service: select.select_option
+                target:
+                  entity_id: select.thermostat_schlafzimmer_temperature_sensor_select
+                data:
+                  option: external_2
+        default: []
+
+  # 2) Wenn das externe Thermometer sich ändert: Wert in die Number-Entity injizieren und sicherheitshalber die Auswahl auf extern halten
+  - id: schlafzimmer_inject_external_temp_on_change
+    alias: "Schlafzimmer – Externe Temperatur injizieren (on change)"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: sensor.thermometer_schlafzimmer_temperature
+        for: "00:00:05"
+    condition:
+      - condition: template
+        value_template: >
+          {{ states('sensor.thermometer_schlafzimmer_temperature') | float(0) > -50 }}
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.thermostat_schlafzimmer_temperature_sensor_select
+        data:
+          option: external_2
+      - service: number.set_value
+        target:
+          entity_id: number.thermostat_schlafzimmer_external_temperature_input
+        data:
+          value: "{{ states('sensor.thermometer_schlafzimmer_temperature') | float | round(1) }}"
+
+  # 3) Wächter: Wenn das TRV eine deutlich andere 'current_temperature' zeigt als das externe Thermometer,
+  #    resynchronisieren (tritt z. B. bei kurzen Funkproblemen/Resets auf)
+  - id: schlafzimmer_resync_if_drift
+    alias: "Schlafzimmer – TRV resync bei Temperaturdrift"
+    mode: single
+    trigger:
+      - platform: time_pattern
+        minutes: "/5"
+      - platform: state
+        entity_id: climate.thermostat_schlafzimmer
+        attribute: current_temperature
+        for: "00:02:00"
+    condition:
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_schlafzimmer','current_temperature') %}
+          {% set ext = states('sensor.thermometer_schlafzimmer_temperature') | float(0) %}
+          {{ trv is number and (trv - ext) | abs > 0.6 }}
+    action:
+      - service: select.select_option
+        target:
+          entity_id: select.thermostat_schlafzimmer_temperature_sensor_select
+        data:
+          option: external_2
+      - service: number.set_value
+        target:
+          entity_id: number.thermostat_schlafzimmer_external_temperature_input
+        data:
+          value: "{{ states('sensor.thermometer_schlafzimmer_temperature') | float | round(1) }}"

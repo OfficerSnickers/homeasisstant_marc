@@ -1,0 +1,58 @@
+esphome:
+  name: dooropener
+  friendly_name: Dooropener
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "sMu4Pi1cQLPtJg/CVc2FuDTwtzYg8naBz89wfxn7yfg="
+
+ota:
+  - platform: esphome
+    password: "41500fbab8572062ae17c6f9034b3733"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Dooropener Fallback Hotspot"
+    password: "nDTGzJJfylWo"
+
+captive_portal:
+
+switch:
+  - platform: gpio
+    pin:
+      number: GPIO32
+      inverted: False
+    id: relay
+    name: "Türöffner"
+    icon: "mdi:gate"
+    on_turn_on:
+    - delay: 3s
+    - switch.turn_off: relay
+
+#sensor:
+  #- platform: adc
+    #pin:
+      #number: GPIO34
+    #attenuation: auto 
+      
+    #name: "speakervcc"
+    #update_interval: 0.5s
+     
+
+
+
+  
+    

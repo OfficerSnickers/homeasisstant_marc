@@ -1,0 +1,30 @@
+# ===== Heizung: Raum Justus (Package) =====
+
+input_boolean:
+  justus_heizung:
+    name: Heizung Justus
+  nachtabsenkung_justus:
+    name: Nachtabsenkung Justus
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Justus (extern)
+    unique_id: heizung_justus_extern_pkg
+    heater: input_boolean.justus_heizung
+    target_sensor: sensor.thermometer_justus_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.thermometer_justus_temperature:
+      display_precision: 1
+    sensor.thermometer_justus_humidity:
+      display_precision: 2

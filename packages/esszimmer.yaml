@@ -1,0 +1,26 @@
+# ===== Heizung: Raum Esszimmer (Package) =====
+
+input_boolean:
+  heizung_esszimmer:
+    name: Heizung Esszimmer
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Esszimmer (extern)
+    heater: input_boolean.heizung_esszimmer     # statt input_boolean.heizung_amelie
+    target_sensor: sensor.thermometer_esszimmer_temperature # <- echter Temperatursensor
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+     
+homeassistant:
+  customize:
+    sensor.thermometer_esszimmer_temperature:
+      display_precision: 1
+    sensor.thermometer_esszimmer_humidity:
+      display_precision: 1

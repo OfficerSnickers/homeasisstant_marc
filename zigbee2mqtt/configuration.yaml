@@ -1,0 +1,101 @@
+homeassistant:
+  enabled: true
+advanced:
+  network_key:
+    - 229
+    - 225
+    - 255
+    - 79
+    - 169
+    - 109
+    - 178
+    - 40
+    - 135
+    - 76
+    - 44
+    - 101
+    - 240
+    - 116
+    - 28
+    - 207
+  pan_id: 21017
+  ext_pan_id:
+    - 17
+    - 17
+    - 41
+    - 127
+    - 108
+    - 248
+    - 19
+    - 208
+mqtt:
+  server: mqtt://core-mosquitto:1883
+  user: addons
+  password: Opiequ1Phiecen6thicohm6jie1ieJaing4ZaexeiNae0jo7emoosh3iequeaShi
+frontend:
+  enabled: true
+  port: 8099
+serial:
+  port: /dev/ttyUSB0
+device_options: {}
+devices:
+  '0x0cae5ffffec28740':
+    friendly_name: Thermostat Amelie
+  '0x00124b002fa140ed':
+    friendly_name: Thermometer Amelie
+  '0x881a14fffeec9f1f':
+    friendly_name: Thermostat Badezimmer
+  '0x00124b002fa1449f':
+    friendly_name: Thermometer Badeztimmer
+  '0x0cae5ffffeca0e1b':
+    friendly_name: 'Küche Thermostat '
+  '0x00124b002faba3c6':
+    friendly_name: Thermometer Küche
+  '0x0cae5ffffecaa8b4':
+    friendly_name: Thermostat Wohnzimmer
+  '0x00124b002fa14d14':
+    friendly_name: Thermometer Wohnzimmer
+  '0x00124b002fab51c0':
+    friendly_name: Thermometer Justus
+  '0x0cae5ffffed03203':
+    friendly_name: Thermostat Esszimmer
+  '0x00124b002fab4cfb':
+    friendly_name: Thermometer Esszimmer
+  '0x881a14fffeeca249':
+    friendly_name: Thermostat Schlafzimmer
+  '0x00124b002fb34441':
+    friendly_name: Thermometer Schlafzimmer
+  '0x881a14fffeea2f84':
+    friendly_name: Thermostat Ankleidezimmer
+  '0x00124b002fb34863':
+    friendly_name: Thermometer Ankleidezimmer
+  '0x70b3d52b600585a1':
+    friendly_name: 'Licht Kaffeeecke '
+  '0xa4c1388f4904b5a7':
+    friendly_name: Fenstersensor Amelie
+  '0xa4c138f5620382f6':
+    friendly_name: Fenster Badezimmer
+  '0xa4c13830c9b0b21e':
+    friendly_name: Fenster Schlafzimmer
+  '0xa4c1381f9baeefee':
+    friendly_name: Fenster Wohnzimmer links
+  '0xa4c13859907a85f1':
+    friendly_name: Fenster Esszimmer
+  '0x70b3d52b6007cb04':
+    friendly_name: 'Steckdose Flur '
+  '0x70b3d52b600616c2':
+    friendly_name: Steckdose schlafzimmer
+  '0x70b3d52b6014f93c':
+    friendly_name: Stamped Justus Zimmer
+  '0xa4c13852f5ba8839':
+    friendly_name: Fenster Küche
+  '0x0cae5ffffed0cb38':
+    friendly_name: Justus Thermostat
+    thermostat_unit: celsius
+  '0xa4c138a64b8745cf':
+    friendly_name: Fenster Ankleidezimmer
+  '0x70b3d52b6017caf7':
+    friendly_name: Weihnachtsbaum
+version: 5
+availability:
+  enabled: true

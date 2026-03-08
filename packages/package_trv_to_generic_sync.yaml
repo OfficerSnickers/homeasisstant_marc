@@ -1,0 +1,448 @@
+# ====== Package: TRV -> Generic Sync for all rooms ======
+# Dieses Paket spiegelt Änderungen am PHYSISCHEN Thermostat (TRV)
+# zurück auf den jeweiligen "externen" Generic-Thermostat, damit
+# sich Euer Dashboard-Regler entsprechend aktualisiert.
+#
+# Sicherungen gegen Ping-Pong:
+# - 2s Debounce
+# - Temperatur nur übernehmen, wenn Differenz > 0.3 °C
+# - Nur wenn Fenster zu (wo vorhanden)
+#
+# Räume & Entitäten (gemäß Deiner letzten Liste):
+#  - Wohnzimmer: TRV climate.thermostat_wohnzimmer -> Generic climate.heizung_wohnzimmer_extern
+#  - Schlafzimmer: TRV climate.thermostat_schlafzimmer -> Generic climate.heizung_schlafzimmer_extern
+#  - Küche: TRV climate.kuche_thermostat -> Generic climate.heizung_kuche_extern
+#  - Esszimmer: TRV climate.thermostat_esszimmer -> Generic climate.heizung_esszimmer_extern
+#  - Badezimmer: TRV climate.thermostat_badezimmer -> Generic climate.heizung_badezimmer_extern
+#  - Amelie: TRV climate.thermostat_amelie -> Generic climate.heizung_amelie_extern
+#  - Ankleidezimmer: TRV climate.ankleidezimmer -> Generic climate.heizung_ankleidezimmer_extern
+#  - Justus: TRV climate.justus_zimmer_2 -> Generic climate.heizung_justus_extern
+#
+# Fensterkontakte:
+#  - Wohnzimmer: binary_sensor.fenster_wohnzimmer_links_contact
+#  - Schlafzimmer: binary_sensor.fenster_schlafzimmer_contact
+#  - Küche: binary_sensor.fenster_kuche_contact
+#  - Esszimmer: binary_sensor.fenster_esszimmer_contact
+#  - Badezimmer: binary_sensor.fenster_badezimmer_contact
+#  - Amelie: binary_sensor.fenstersensor_amelie_contact
+#  - Ankleidezimmer: binary_sensor.fenster_ankleidezimmer_contact
+#  - Justus: keiner
+
+automation:
+
+  # ===== Wohnzimmer =====
+  - id: wz_trv_to_generic_mode
+    alias: "Wohnzimmer – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_wohnzimmer
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_wohnzimmer') == 'off' and states('climate.heizung_wohnzimmer_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_wohnzimmer_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_wohnzimmer') != 'off' and states('climate.heizung_wohnzimmer_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_wohnzimmer_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: wz_trv_to_generic_temp
+    alias: "Wohnzimmer – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_wohnzimmer
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_wohnzimmer_links_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_wohnzimmer','temperature') %}
+          {% set gen = state_attr('climate.heizung_wohnzimmer_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_wohnzimmer_extern }
+        data:
+          temperature: "{{ state_attr('climate.thermostat_wohnzimmer','temperature')|float|round(1) }}"
+
+  # ===== Schlafzimmer =====
+  - id: sz_trv_to_generic_mode
+    alias: "Schlafzimmer – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_schlafzimmer
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_schlafzimmer_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_schlafzimmer') == 'off' and states('climate.heizung_schlafzimmer_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_schlafzimmer_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_schlafzimmer') != 'off' and states('climate.heizung_schlafzimmer_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_schlafzimmer_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: sz_trv_to_generic_temp
+    alias: "Schlafzimmer – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_schlafzimmer
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_schlafzimmer_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_schlafzimmer','temperature') %}
+          {% set gen = state_attr('climate.heizung_schlafzimmer_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_schlafzimmer_extern }
+        data:
+          temperature: "{{ state_attr('climate.thermostat_schlafzimmer','temperature')|float|round(1) }}"
+
+  # ===== Küche =====
+  - id: k_trv_to_generic_mode
+    alias: "Küche – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.kuche_thermostat
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_kuche_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.kuche_thermostat') == 'off' and states('climate.heizung_kuche_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_kuche_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.kuche_thermostat') != 'off' and states('climate.heizung_kuche_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_kuche_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: k_trv_to_generic_temp
+    alias: "Küche – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.kuche_thermostat
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_kuche_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.kuche_thermostat','temperature') %}
+          {% set gen = state_attr('climate.heizung_kuche_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_kuche_extern }
+        data:
+          temperature: "{{ state_attr('climate.kuche_thermostat','temperature')|float|round(1) }}"
+
+  # ===== Esszimmer =====
+  - id: ez_trv_to_generic_mode
+    alias: "Esszimmer – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_esszimmer
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_esszimmer_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_esszimmer') == 'off' and states('climate.heizung_esszimmer_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_esszimmer_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_esszimmer') != 'off' and states('climate.heizung_esszimmer_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_esszimmer_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: ez_trv_to_generic_temp
+    alias: "Esszimmer – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_esszimmer
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_esszimmer_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_esszimmer','temperature') %}
+          {% set gen = state_attr('climate.heizung_esszimmer_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_esszimmer_extern }
+        data:
+          temperature: "{{ state_attr('climate.thermostat_esszimmer','temperature')|float|round(1) }}"
+
+  # ===== Badezimmer =====
+  - id: bad_trv_to_generic_mode
+    alias: "Badezimmer – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_badezimmer
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_badezimmer_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_badezimmer') == 'off' and states('climate.heizung_badezimmer_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_badezimmer_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_badezimmer') != 'off' and states('climate.heizung_badezimmer_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_badezimmer_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: bad_trv_to_generic_temp
+    alias: "Badezimmer – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_badezimmer
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_badezimmer_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_badezimmer','temperature') %}
+          {% set gen = state_attr('climate.heizung_badezimmer_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_badezimmer_extern }
+        data:
+          temperature: "{{ state_attr('climate.thermostat_badezimmer','temperature')|float|round(1) }}"
+
+  # ===== Amelie =====
+  - id: am_trv_to_generic_mode
+    alias: "Amelie – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_amelie
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenstersensor_amelie_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_amelie') == 'off' and states('climate.heizung_amelie_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_amelie_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.thermostat_amelie') != 'off' and states('climate.heizung_amelie_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_amelie_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: am_trv_to_generic_temp
+    alias: "Amelie – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.thermostat_amelie
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenstersensor_amelie_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.thermostat_amelie','temperature') %}
+          {% set gen = state_attr('climate.heizung_amelie_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_amelie_extern }
+        data:
+          temperature: "{{ state_attr('climate.thermostat_amelie','temperature')|float|round(1) }}"
+
+  # ===== Ankleidezimmer =====
+  - id: akl_trv_to_generic_mode
+    alias: "Ankleidezimmer – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.ankleidezimmer
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_ankleidezimmer_contact
+        state: "off"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.ankleidezimmer') == 'off' and states('climate.heizung_ankleidezimmer_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.ankleidezimmer') != 'off' and states('climate.heizung_ankleidezimmer_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: akl_trv_to_generic_temp
+    alias: "Ankleidezimmer – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.ankleidezimmer
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: state
+        entity_id: binary_sensor.fenster_ankleidezimmer_contact
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.ankleidezimmer','temperature') %}
+          {% set gen = state_attr('climate.heizung_ankleidezimmer_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_ankleidezimmer_extern }
+        data:
+          temperature: "{{ state_attr('climate.ankleidezimmer','temperature')|float|round(1) }}"
+
+  # ===== Justus (ohne Fensterkontakt) =====
+  - id: justus_trv_to_generic_mode
+    alias: "Justus – TRV→Generic Modus"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.justus_zimmer_2
+        for: "00:00:02"
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.justus_zimmer_2') == 'off' and states('climate.heizung_justus_extern') != 'off' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_justus_extern }
+                data: { hvac_mode: "off" }
+          - conditions:
+              - condition: template
+                value_template: "{{ states('climate.justus_zimmer_2') != 'off' and states('climate.heizung_justus_extern') != 'heat' }}"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_justus_extern }
+                data: { hvac_mode: heat }
+        default: []
+
+  - id: justus_trv_to_generic_temp
+    alias: "Justus – TRV→Generic Temperatur"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: climate.justus_zimmer_2
+        attribute: temperature
+        for: "00:00:02"
+    condition:
+      - condition: template
+        value_template: >
+          {% set trv = state_attr('climate.justus_zimmer_2','temperature') %}
+          {% set gen = state_attr('climate.heizung_justus_extern','temperature') %}
+          {{ trv is number and gen is number and (trv|float - gen|float)|abs > 0.3 }}
+    action:
+      - service: climate.set_temperature
+        target: { entity_id: climate.heizung_justus_extern }
+        data:
+          temperature: "{{ state_attr('climate.justus_zimmer_2','temperature')|float|round(1) }}"

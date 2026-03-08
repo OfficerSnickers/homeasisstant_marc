@@ -1,0 +1,30 @@
+# ===== Heizung: Raum Esszimmer (Package) =====
+
+input_boolean:
+  heizung_esszimmer:
+    name: Heizung Esszimmer
+  nachtabsenkung_esszimmer:
+    name: Nachtabsenkung Esszimmer
+    icon: mdi:weather-night
+
+climate:
+  - platform: generic_thermostat
+    name: Heizung Esszimmer (extern)
+    unique_id: heizung_esszimmer_extern_pkg
+    heater: input_boolean.heizung_esszimmer
+    target_sensor: sensor.thermometer_esszimmer_temperature
+    min_temp: 5
+    max_temp: 30
+    target_temp: 20
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    precision: 0.1
+    target_temp_step: 0.1
+    ac_mode: false
+
+homeassistant:
+  customize:
+    sensor.thermometer_esszimmer_temperature:
+      display_precision: 1
+    sensor.thermometer_esszimmer_humidity:
+      display_precision: 1

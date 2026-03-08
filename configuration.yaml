@@ -1,0 +1,61 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+homeassistant:
+  packages: !include_dir_named packages
+
+http:
+  cors_allowed_origins:
+    - https://google.com
+    - https://www.home-assistant.io
+  ip_ban_enabled: true
+  login_attempts_threshold: 5
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.30.33.0/24
+
+#climate:
+ # - platform: generic_thermostat
+  #  name: Heizung Justus (extern)
+   # heater: input_boolean.justus_heizung
+    #target_sensor: sensor.thermometer_justus_temperature
+    #min_temp: 5
+    #max_temp: 30
+    #target_temp: 20
+    #cold_tolerance: 0.3
+    #hot_tolerance: 0.3
+    #precision: 0.1
+    #ac_mode: false
+    
+    
+  #- platform: generic_thermostat
+    #name: Heizung Wohnzimmer (extern)
+    #heater: input_boolean.heizung_wohnzimmer
+    #target_sensor: sensor.0x00124b002fa14d14_temperature   # <- echter Temperatursensor
+    #min_temp: 5
+    #max_temp: 30
+    #target_temp: 20
+    #cold_tolerance: 0.3
+    #hot_tolerance: 0.3
+    #precision: 0.1
+    #target_temp_step: 0.1
+    #ac_mode: false
+
+
+
+
+# Example configuration.yaml entry
+sensor:
+  - platform: worxlandroid
+    host: 192.168.178.129
+    pin: 0000
+
+

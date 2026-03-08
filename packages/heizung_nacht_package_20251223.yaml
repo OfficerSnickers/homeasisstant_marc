@@ -1,0 +1,407 @@
+# ===========================================================
+# Paket: Heizung – Nachtabsenkung (zeitgesteuert, pro Raum)
+# Datei-Empfehlung: /config/packages/heizung_nacht.yaml
+# Inhalt:
+#   - Helpers (input_datetime Start/Ende, input_boolean pro Raum)
+#   - Zwei Automationen: Start = AUS, Ende = wieder HEAT
+# Abhängigkeiten:
+#   - Climate-Entitäten wie in deiner Installation benannt
+#     (z. B. climate.heizung_wohnzimmer_extern, climate.thermostat_wohnzimmer, ...)
+# ===========================================================
+
+input_datetime:
+  heizung_nacht_start:
+    name: Heizung Nacht Start
+    has_date: false
+    has_time: true
+  heizung_nacht_ende:
+    name: Heizung Nacht Ende
+    has_date: false
+    has_time: true
+
+input_boolean:
+  nachtabsenkung_wohnzimmer:
+    name: Nachtabsenkung Wohnzimmer
+  nachtabsenkung_schlafzimmer:
+    name: Nachtabsenkung Schlafzimmer
+  nachtabsenkung_ankleidezimmer:
+    name: Nachtabsenkung Ankleidezimmer
+  nachtabsenkung_kueche:
+    name: Nachtabsenkung Küche
+  nachtabsenkung_amelie:
+    name: Nachtabsenkung Amelie
+  nachtabsenkung_esszimmer:
+    name: Nachtabsenkung Esszimmer
+  nachtabsenkung_badezimmer:
+    name: Nachtabsenkung Badezimmer
+  nachtabsenkung_justus:
+    name: Nachtabsenkung Justus
+
+automation:
+  # ----------------------------------------------
+  # START: Nachtabsenkung -> markierte Räume AUS
+  # ----------------------------------------------
+  - id: heizung_nachtabsenkung_start
+    alias: "Heizung – Nachtabsenkung START (AUS für markierte Räume)"
+    mode: single
+    trigger:
+      - platform: time
+        at: input_datetime.heizung_nacht_start
+    action:
+      - choose:
+          # Wohnzimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_wohnzimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_wohnzimmer_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.thermostat_wohnzimmer }
+                data: { hvac_mode: "off" }
+
+          # Schlafzimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_schlafzimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_schlafzimmer_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.thermostat_schlafzimmer }
+                data: { hvac_mode: "off" }
+
+          # Ankleidezimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_ankleidezimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.ankleidezimmer }
+                data: { hvac_mode: "off" }
+
+          # Küche
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_kueche
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_kuche_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.kuche_thermostat }
+                data: { hvac_mode: "off" }
+
+          # Esszimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_esszimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_esszimmer_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.thermostat_esszimmer }
+                data: { hvac_mode: "off" }
+
+          # Badezimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_badezimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_badezimmer_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.thermostat_badezimmer }
+                data: { hvac_mode: "off" }
+
+          # Amelie
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_amelie
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_amelie_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.thermostat_amelie }
+                data: { hvac_mode: "off" }
+
+          # Justus
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_justus
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_justus_extern }
+                data: { hvac_mode: "off" }
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                data: { hvac_mode: "off" }
+        default: []
+
+  # -------------------------------------------------
+  # ENDE: Nachtabsenkung -> markierte Räume auf HEAT
+  # -------------------------------------------------
+  - id: heizung_nachtabsenkung_ende
+    alias: "Heizung – Nachtabsenkung ENDE (HEAT für markierte Räume)"
+    mode: single
+    trigger:
+      - platform: time
+        at: input_datetime.heizung_nacht_ende
+    action:
+      - choose:
+          # Wohnzimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_wohnzimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_wohnzimmer_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.thermostat_wohnzimmer }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.thermostat_wohnzimmer','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.thermostat_wohnzimmer }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.thermostat_wohnzimmer }
+
+          # Schlafzimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_schlafzimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_schlafzimmer_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.thermostat_schlafzimmer }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.thermostat_schlafzimmer','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.thermostat_schlafzimmer }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.thermostat_schlafzimmer }
+
+          # Ankleidezimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_ankleidezimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_ankleidezimmer_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.ankleidezimmer }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.ankleidezimmer','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.ankleidezimmer }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.ankleidezimmer }
+
+          # Küche
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_kueche
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_kuche_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.kuche_thermostat }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.kuche_thermostat','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.kuche_thermostat }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.kuche_thermostat }
+
+          # Esszimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_esszimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_esszimmer_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.thermostat_esszimmer }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.thermostat_esszimmer','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.thermostat_esszimmer }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.thermostat_esszimmer }
+
+          # Badezimmer
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_badezimmer
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_badezimmer_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.thermostat_badezimmer }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.thermostat_badezimmer','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.thermostat_badezimmer }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.thermostat_badezimmer }
+
+          # Amelie
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_amelie
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_amelie_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.thermostat_amelie }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.thermostat_amelie','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.thermostat_amelie }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.thermostat_amelie }
+
+          # Justus
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.nachtabsenkung_justus
+                state: "on"
+            sequence:
+              - service: climate.set_hvac_mode
+                target: { entity_id: climate.heizung_justus_extern }
+                data: { hvac_mode: heat }
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ 'heat' in (state_attr('climate.0x0cae5ffffed0cb38xx','hvac_modes') or []) }}"
+                    sequence:
+                      - service: climate.set_hvac_mode
+                        target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                        data: { hvac_mode: heat }
+                default:
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ 'auto' in (state_attr('climate.0x0cae5ffffed0cb38xx','hvac_modes') or []) }}"
+                        sequence:
+                          - service: climate.set_hvac_mode
+                            target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+                            data: { hvac_mode: auto }
+                    default:
+                      - service: climate.turn_on
+                        target: { entity_id: climate.0x0cae5ffffed0cb38xx }
+        default: []
