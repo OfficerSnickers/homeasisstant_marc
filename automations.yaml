@@ -1,39 +1,70 @@
-﻿# ==========================
-#  Heizung Ã¢â‚¬â€œ VollstÃƒÂ¤ndige Automationsdatei
-#  Stand: 2025-12-21
-#  RÃƒÂ¤ume: Wohnzimmer, Schlafzimmer, KÃƒÂ¼che, Esszimmer, Badezimmer, Ankleidezimmer, Amelie, Justus
-#  Anforderungen:
-#   - Externer FÃƒÂ¼hler erzwingen + Temperatur injizieren
-#   - Generic (extern) <-> TRV: Modus + Solltemperatur spiegeln
-#   - Fenster-Logik (Pause/Resume) pro Raum (auÃƒÅ¸er Justus, kein Fensterkontakt)
-#   - Beim Start alle Generic auf HEAT
-#   - Push bei > 25Ã‚Â°C
-# ==========================
-
+﻿# ------------------------
+# HELFER: STARTUP - externe Regler auf letzten TRV-Stand setzen
 # ------------------------
-# HELFER: STARTUP Ã¢â‚¬â€œ alle externen Regler auf HEAT
-# ------------------------
-- id: heizung_startup_generic_heat
-  alias: "Heizung Ã¢â‚¬â€œ Startup: alle externen Regler auf HEAT"
+- id: heizung_startup_restore_from_trv
+  alias: "Heizung - Startup: externe Regler aus TRV wiederherstellen"
   mode: single
   trigger:
     - platform: homeassistant
       event: start
   action:
-    - service: climate.set_hvac_mode
-      target:
-        entity_id:
-          - climate.heizung_wohnzimmer_extern
-          - climate.heizung_schlafzimmer_extern
-          - climate.heizung_kuche_extern
-          - climate.heizung_esszimmer_extern
-          - climate.heizung_badezimmer_extern_2
-          - climate.heizung_ankleidezimmer_extern
-          - climate.heizung_amelie_extern
-          - climate.heizung_justus_extern
-      data:
-        hvac_mode: heat
-
+    - delay: "00:00:10"
+    - variables:
+        rooms:
+          - trv: climate.thermostat_wohnzimmer
+            ext: climate.heizung_wohnzimmer_extern
+          - trv: climate.thermostat_schlafzimmer
+            ext: climate.heizung_schlafzimmer_extern
+          - trv: climate.kuche_thermostat
+            ext: climate.heizung_kuche_extern
+          - trv: climate.thermostat_esszimmer
+            ext: climate.heizung_esszimmer_extern
+          - trv: climate.thermostat_badezimmer
+            ext: climate.heizung_badezimmer_extern_2
+          - trv: climate.ankleidezimmer
+            ext: climate.heizung_ankleidezimmer_extern
+          - trv: climate.thermostat_amelie
+            ext: climate.heizung_amelie_extern
+          - trv: climate.justus_zimmer_2
+            ext: climate.heizung_justus_extern
+    - repeat:
+        for_each: "{{ rooms }}"
+        sequence:
+          - variables:
+              trv: "{{ repeat.item.trv }}"
+              ext: "{{ repeat.item.ext }}"
+              trv_state: "{{ states(trv) }}"
+              trv_temp: "{{ state_attr(trv, 'temperature') }}"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trv_state in ['unknown', 'unavailable', 'none', ''] }}"
+                sequence: []
+              - conditions:
+                  - condition: template
+                    value_template: "{{ trv_state == 'off' }}"
+                sequence:
+                  - service: climate.set_hvac_mode
+                    target:
+                      entity_id: "{{ ext }}"
+                    data:
+                      hvac_mode: "off"
+            default:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ trv_temp is number }}"
+                    sequence:
+                      - service: climate.set_temperature
+                        target:
+                          entity_id: "{{ ext }}"
+                        data:
+                          temperature: "{{ trv_temp | float | round(1) }}"
+              - service: climate.set_hvac_mode
+                target:
+                  entity_id: "{{ ext }}"
+                data:
+                  hvac_mode: "heat"
 # ======================================================================
 #  BLOCK: PRO RAUM Ã¢â‚¬â€œ externe FÃƒÂ¼hler erzwingen + injizieren + Sync + Fenster
 # ======================================================================
