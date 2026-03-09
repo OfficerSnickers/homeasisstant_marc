@@ -8,7 +8,6 @@
     - platform: homeassistant
       event: start
   action:
-    - delay: "00:00:10"
     - variables:
         rooms:
           - trv: climate.thermostat_wohnzimmer
@@ -28,43 +27,47 @@
           - trv: climate.justus_zimmer_2
             ext: climate.heizung_justus_extern
     - repeat:
-        for_each: "{{ rooms }}"
+        count: 18
         sequence:
-          - variables:
-              trv: "{{ repeat.item.trv }}"
-              ext: "{{ repeat.item.ext }}"
-              trv_state: "{{ states(trv) }}"
-              trv_temp: "{{ state_attr(trv, 'temperature') }}"
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trv_state in ['unknown', 'unavailable', 'none', ''] }}"
-                sequence: []
-              - conditions:
-                  - condition: template
-                    value_template: "{{ trv_state == 'off' }}"
-                sequence:
-                  - service: climate.set_hvac_mode
-                    target:
-                      entity_id: "{{ ext }}"
-                    data:
-                      hvac_mode: "off"
-            default:
-              - choose:
-                  - conditions:
-                      - condition: template
-                        value_template: "{{ trv_temp is number }}"
-                    sequence:
-                      - service: climate.set_temperature
-                        target:
-                          entity_id: "{{ ext }}"
-                        data:
-                          temperature: "{{ trv_temp | float | round(1) }}"
-              - service: climate.set_hvac_mode
-                target:
-                  entity_id: "{{ ext }}"
-                data:
-                  hvac_mode: "heat"
+          - repeat:
+              for_each: "{{ rooms }}"
+              sequence:
+                - variables:
+                    trv: "{{ repeat.item.trv }}"
+                    ext: "{{ repeat.item.ext }}"
+                    trv_state: "{{ states(trv) }}"
+                    trv_temp: "{{ state_attr(trv, 'temperature') }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ trv_state in ['unknown', 'unavailable', 'none', ''] }}"
+                      sequence: []
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ trv_state == 'off' }}"
+                      sequence:
+                        - service: climate.set_hvac_mode
+                          target:
+                            entity_id: "{{ ext }}"
+                          data:
+                            hvac_mode: "off"
+                  default:
+                    - choose:
+                        - conditions:
+                            - condition: template
+                              value_template: "{{ trv_temp is number }}"
+                          sequence:
+                            - service: climate.set_temperature
+                              target:
+                                entity_id: "{{ ext }}"
+                              data:
+                                temperature: "{{ trv_temp | float | round(1) }}"
+                    - service: climate.set_hvac_mode
+                      target:
+                        entity_id: "{{ ext }}"
+                      data:
+                        hvac_mode: "heat"
+          - delay: "00:00:10"
 # ======================================================================
 #  BLOCK: PRO RAUM Ã¢â‚¬â€œ externe FÃƒÂ¼hler erzwingen + injizieren + Sync + Fenster
 # ======================================================================
