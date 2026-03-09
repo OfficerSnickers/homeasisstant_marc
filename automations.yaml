@@ -1,4 +1,4 @@
-﻿# ------------------------
+# ------------------------
 # HELFER: STARTUP - externe Regler auf letzten TRV-Stand setzen
 # ------------------------
 - id: heizung_startup_restore_from_trv
@@ -263,6 +263,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_wohnzimmer_links_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions:
@@ -517,6 +520,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_schlafzimmer_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
@@ -720,6 +726,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_kuche_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
@@ -923,6 +932,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_esszimmer_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
@@ -1126,6 +1138,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_badezimmer_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
@@ -1329,6 +1344,9 @@
     - platform: state
       entity_id: binary_sensor.fenster_ankleidezimmer_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
@@ -1532,6 +1550,9 @@
     - platform: state
       entity_id: binary_sensor.fenstersensor_amelie_contact
       to: ["on","off"]
+  condition:
+    - condition: template
+      value_template: "{{ trigger.from_state is not none and trigger.to_state is not none and trigger.from_state.state in ['on','off'] and trigger.to_state.state in ['on','off'] }}"
   action:
     - choose:
         - conditions: [ { condition: template, value_template: "{{ trigger.to_state.state == 'on' }}" } ]
