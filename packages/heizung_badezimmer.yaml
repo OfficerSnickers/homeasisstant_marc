@@ -12,7 +12,7 @@ climate:
     name: Heizung Badezimmer (extern)
     unique_id: heizung_badezimmer_extern_pkg
     heater: input_boolean.heizung_badezimmer
-    target_sensor: sensor.thermometer_badezimmer_temperature
+    target_sensor: sensor.thermometer_badeztimmer_temperature
     min_temp: 5
     max_temp: 30
     target_temp: 20
@@ -24,7 +24,7 @@ climate:
 
 homeassistant:
   customize:
-    sensor.thermometer_badezimmer_temperature:
+    sensor.thermometer_badeztimmer_temperature:
       display_precision: 1
-    sensor.thermometer_badezimmer_humidity:
+    sensor.thermometer_badeztimmer_humidity:
       display_precision: 1
