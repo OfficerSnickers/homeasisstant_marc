@@ -1,20 +1,20 @@
-# ==========================
-#  Heizung â€“ VollstÃ¤ndige Automationsdatei
+﻿# ==========================
+#  Heizung Ã¢â‚¬â€œ VollstÃƒÂ¤ndige Automationsdatei
 #  Stand: 2025-12-21
-#  RÃ¤ume: Wohnzimmer, Schlafzimmer, KÃ¼che, Esszimmer, Badezimmer, Ankleidezimmer, Amelie, Justus
+#  RÃƒÂ¤ume: Wohnzimmer, Schlafzimmer, KÃƒÂ¼che, Esszimmer, Badezimmer, Ankleidezimmer, Amelie, Justus
 #  Anforderungen:
-#   - Externer FÃ¼hler erzwingen + Temperatur injizieren
+#   - Externer FÃƒÂ¼hler erzwingen + Temperatur injizieren
 #   - Generic (extern) <-> TRV: Modus + Solltemperatur spiegeln
-#   - Fenster-Logik (Pause/Resume) pro Raum (auÃŸer Justus, kein Fensterkontakt)
+#   - Fenster-Logik (Pause/Resume) pro Raum (auÃƒÅ¸er Justus, kein Fensterkontakt)
 #   - Beim Start alle Generic auf HEAT
-#   - Push bei > 25Â°C
+#   - Push bei > 25Ã‚Â°C
 # ==========================
 
 # ------------------------
-# HELFER: STARTUP â€“ alle externen Regler auf HEAT
+# HELFER: STARTUP Ã¢â‚¬â€œ alle externen Regler auf HEAT
 # ------------------------
 - id: heizung_startup_generic_heat
-  alias: "Heizung â€“ Startup: alle externen Regler auf HEAT"
+  alias: "Heizung Ã¢â‚¬â€œ Startup: alle externen Regler auf HEAT"
   mode: single
   trigger:
     - platform: homeassistant
@@ -35,7 +35,7 @@
         hvac_mode: heat
 
 # ======================================================================
-#  BLOCK: PRO RAUM â€“ externe FÃ¼hler erzwingen + injizieren + Sync + Fenster
+#  BLOCK: PRO RAUM Ã¢â‚¬â€œ externe FÃƒÂ¼hler erzwingen + injizieren + Sync + Fenster
 # ======================================================================
 
 # ------------------------
@@ -44,7 +44,7 @@
 
 # 1) TRV: externen Sensor erzwingen + externe Temperatur injizieren
 - id: wz_trv_external_enforce
-  alias: "Wohnzimmer â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -91,7 +91,7 @@
 
 # 2) Modus-Sync: Generic <-> TRV
 - id: wz_sync_mode
-  alias: "Wohnzimmer â€“ Sync TRVâ†”Generic Modus"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -171,7 +171,7 @@
 
 # 3) Temperatur-Sync (beide Richtungen, mit Toleranz & Schrittweite)
 - id: wz_sync_temp
-  alias: "Wohnzimmer â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -286,9 +286,9 @@
               target: { entity_id: climate.thermostat_wohnzimmer }
               data:
                 temperature: "{{ states('input_number.heizung_restore_wohnzimmer') | float(20) }}"
-# NEU: Wohnzimmer â€“ Fenster-OPEN-Sofortabschaltung (Failsafe)
+# NEU: Wohnzimmer Ã¢â‚¬â€œ Fenster-OPEN-Sofortabschaltung (Failsafe)
 - id: wz_window_open_fast_off
-  alias: "Wohnzimmer â€“ Fenster offen Sofort-AUS (Failsafe)"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Fenster offen Sofort-AUS (Failsafe)"
   mode: restart
   trigger:
     - platform: state
@@ -306,9 +306,9 @@
       target: { entity_id: climate.heizung_wohnzimmer_extern }
       data: { hvac_mode: "off" }
 
-# NEU: Wohnzimmer â€“ Fenster offen Guard (alle 30s sicher AUS)
+# NEU: Wohnzimmer Ã¢â‚¬â€œ Fenster offen Guard (alle 30s sicher AUS)
 - id: wz_window_open_guard
-  alias: "Wohnzimmer â€“ Fenster offen Guard"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Fenster offen Guard"
   mode: queued
   max: 3
   trigger:
@@ -333,7 +333,7 @@
 # ------------------------
 
 - id: sz_trv_external_enforce
-  alias: "Schlafzimmer â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -371,7 +371,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: sz_sync_mode
-  alias: "Schlafzimmer â€“ Sync TRVâ†”Generic Modus"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -430,7 +430,7 @@
       default: []
 
 - id: sz_sync_temp
-  alias: "Schlafzimmer â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -533,11 +533,11 @@
               data:
                 temperature: "{{ states('input_number.heizung_restore_schlafzimmer') | float(20) }}"
 # ------------------------
-# KÃœCHE
+# KÃƒÅ“CHE
 # ------------------------
 
 - id: k_trv_external_enforce
-  alias: "KÃ¼che â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -575,7 +575,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: k_sync_mode
-  alias: "KÃ¼che â€“ Sync TRVâ†”Generic Modus"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -634,7 +634,7 @@
       default: []
 
 - id: k_sync_temp
-  alias: "KÃ¼che â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -740,7 +740,7 @@
 # ------------------------
 
 - id: ez_trv_external_enforce
-  alias: "Esszimmer â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Esszimmer Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -778,7 +778,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: ez_sync_mode
-  alias: "Esszimmer â€“ Sync TRVâ†”Generic Modus"
+  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -837,7 +837,7 @@
       default: []
 
 - id: ez_sync_temp
-  alias: "Esszimmer â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -943,18 +943,18 @@
 # ------------------------
 
 - id: bad_trv_external_enforce
-  alias: "Badezimmer â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Badezimmer Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
-      entity_id: sensor.thermometer_badeztimmer_temperature
+      entity_id: sensor.thermometer_badezimmer_temperature
     - platform: time_pattern
       minutes: "/2"
   action:
     - variables:
         sel: "select.thermostat_badezimmer_temperature_sensor_select"
         num: "number.thermostat_badezimmer_external_temperature_input"
-        ext: "{{ states('sensor.thermometer_badeztimmer_temperature') | float(999) }}"
+        ext: "{{ states('sensor.thermometer_badezimmer_temperature') | float(999) }}"
         cur: "{{ states('number.thermostat_badezimmer_external_temperature_input') | float(999) }}"
         opts: "{{ state_attr('select.thermostat_badezimmer_temperature_sensor_select','options') or [] }}"
     - choose:
@@ -981,7 +981,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: bad_sync_mode
-  alias: "Badezimmer â€“ Sync TRVâ†”Generic Modus"
+  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1040,7 +1040,7 @@
       default: []
 
 - id: bad_sync_temp
-  alias: "Badezimmer â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1146,7 +1146,7 @@
 # ------------------------
 
 - id: akl_trv_external_enforce
-  alias: "Ankleidezimmer â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -1184,7 +1184,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: akl_sync_mode
-  alias: "Ankleidezimmer â€“ Sync TRVâ†”Generic Modus"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1243,7 +1243,7 @@
       default: []
 
 - id: akl_sync_temp
-  alias: "Ankleidezimmer â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1349,7 +1349,7 @@
 # ------------------------
 
 - id: am_trv_external_enforce
-  alias: "Amelie â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Amelie Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -1387,7 +1387,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: am_sync_mode
-  alias: "Amelie â€“ Sync TRVâ†”Generic Modus"
+  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1446,7 +1446,7 @@
       default: []
 
 - id: am_sync_temp
-  alias: "Amelie â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1548,11 +1548,11 @@
               data:
                 temperature: "{{ states('input_number.heizung_restore_amelie') | float(20) }}"
 # ------------------------
-# JUSTUS (kein Fensterkontakt) â€“ GUARD-FIX
+# JUSTUS (kein Fensterkontakt) Ã¢â‚¬â€œ GUARD-FIX
 # ------------------------
 
 - id: ju_trv_external_enforce
-  alias: "Justus â€“ TRV externer Sensor & Temperatur injizieren"
+  alias: "Justus Ã¢â‚¬â€œ TRV externer Sensor & Temperatur injizieren"
   mode: restart
   trigger:
     - platform: state
@@ -1589,9 +1589,9 @@
       target: { entity_id: "{{ num }}" }
       data: { value: "{{ ext | round(1) }}" }
 
-# GUARD: Modus-Sync mit unterdrÃ¼cktem OFF-Propagieren (auÃŸer bei Nachtabsenkung)
+# GUARD: Modus-Sync mit unterdrÃƒÂ¼cktem OFF-Propagieren (auÃƒÅ¸er bei Nachtabsenkung)
 - id: ju_sync_mode
-  alias: "Justus â€“ Sync TRVâ†”Generic Modus (guarded)"
+  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus (guarded)"
   mode: restart
   trigger:
     - platform: state
@@ -1663,7 +1663,7 @@
       default: []
 
 - id: ju_sync_temp
-  alias: "Justus â€“ Sync TRVâ†”Generic Temperatur"
+  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1699,9 +1699,9 @@
                   {% set t = state_attr('climate.heizung_justus_extern','temperature')|float %}
                   {{ ((t/step)|round(0) * step) | round(1) }}
 
-# Guard: Re-Arm TRV falls fÃ¤lschlich OFF bleibt, obwohl geheizt werden mÃ¼sste
+# Guard: Re-Arm TRV falls fÃƒÂ¤lschlich OFF bleibt, obwohl geheizt werden mÃƒÂ¼sste
 - id: ju_heat_guard
-  alias: "Justus â€“ Heat Guard (re-arm TRV)"
+  alias: "Justus Ã¢â‚¬â€œ Heat Guard (re-arm TRV)"
   mode: restart
   trigger:
     - platform: time_pattern
@@ -1741,7 +1741,7 @@
 
 # Trace: logge, wenn der externe Regler OFF geht
 - id: ju_trace_external_off
-  alias: "Justus â€“ Trace external OFF"
+  alias: "Justus Ã¢â‚¬â€œ Trace external OFF"
   mode: queued
   max: 10
   trigger:
@@ -1752,22 +1752,22 @@
     - service: logbook.log
       data:
         name: "Heizung Justus (Trace)"
-        message: "External climate wurde OFF gesetzt. Ursache: siehe AuslÃ¶ser/Automationen."
+        message: "External climate wurde OFF gesetzt. Ursache: siehe AuslÃƒÂ¶ser/Automationen."
         entity_id: climate.heizung_justus_extern
 
 
 # ------------------------
-# GLOBAL: Warnung > 25 Â°C (nur an Marc)
+# GLOBAL: Warnung > 25 Ã‚Â°C (nur an Marc)
 # ------------------------
 - id: warnung_ueber_25c
-  alias: "Warnung: Raum Ã¼ber 25Â°C"
+  alias: "Warnung: Raum ÃƒÂ¼ber 25Ã‚Â°C"
   mode: single
   trigger:
     - platform: numeric_state
       entity_id:
         - sensor.thermometer_amelie_temperature
         - sensor.thermometer_ankleidezimmer_temperature
-        - sensor.thermometer_badeztimmer_temperature
+        - sensor.thermometer_badezimmer_temperature
         - sensor.thermometer_esszimmer_temperature
         - sensor.thermometer_justus_temperature
         - sensor.thermometer_kuche_temperature
@@ -1780,16 +1780,16 @@
         temp: "{{ trigger.to_state.state }}"
     - service: notify.mobile_app_iphone_16_pro_max_marc
       data:
-        message: "ðŸ”¥ {{ raum }} hat {{ temp }} Â°C erreicht. Bitte prÃ¼fen/lÃ¼ften."
+        message: "Ã°Å¸â€Â¥ {{ raum }} hat {{ temp }} Ã‚Â°C erreicht. Bitte prÃƒÂ¼fen/lÃƒÂ¼ften."
 
 # ======================================================================
-#  NEU: HVAC-FOLLOW â€“ heizen, wenn ext <= setpoint - 0.2 Â°C
+#  NEU: HVAC-FOLLOW Ã¢â‚¬â€œ heizen, wenn ext <= setpoint - 0.2 Ã‚Â°C
 #  (Ziel: TRV reagiert sofort auf fallende externe Temperatur)
 # ======================================================================
 
 # Wohnzimmer
 - id: wz_follow_hvac_from_external
-  alias: "Wohnzimmer â€“ HVAC follow external temp"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -1831,7 +1831,7 @@
 
 # Schlafzimmer
 - id: sz_follow_hvac_from_external
-  alias: "Schlafzimmer â€“ HVAC follow external temp"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -1871,9 +1871,9 @@
           data:
             temperature: "{{ ((tgt/step)|round(0) * step) | round(1) }}"
 
-# KÃ¼che
+# KÃƒÂ¼che
 - id: k_follow_hvac_from_external
-  alias: "KÃ¼che â€“ HVAC follow external temp"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -1915,7 +1915,7 @@
 
 # Esszimmer
 - id: ez_follow_hvac_from_external
-  alias: "Esszimmer â€“ HVAC follow external temp"
+  alias: "Esszimmer Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -1957,11 +1957,11 @@
 
 # Badezimmer
 - id: bad_follow_hvac_from_external
-  alias: "Badezimmer â€“ HVAC follow external temp"
+  alias: "Badezimmer Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
-      entity_id: sensor.thermometer_badeztimmer_temperature
+      entity_id: sensor.thermometer_badezimmer_temperature
     - platform: state
       entity_id: climate.heizung_badezimmer_extern
       attribute: temperature
@@ -1976,7 +1976,7 @@
       state: "off"
   action:
     - variables:
-        ext: "{{ states('sensor.thermometer_badeztimmer_temperature')|float(999) }}"
+        ext: "{{ states('sensor.thermometer_badezimmer_temperature')|float(999) }}"
         tgt: "{{ state_attr('climate.heizung_badezimmer_extern','temperature')|float(999) }}"
         step: "{{ state_attr('climate.thermostat_badezimmer','target_temp_step')|float(0.5) }}"
     - choose:
@@ -1999,7 +1999,7 @@
 
 # Ankleidezimmer
 - id: akl_follow_hvac_from_external
-  alias: "Ankleidezimmer â€“ HVAC follow external temp"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -2041,7 +2041,7 @@
 
 # Amelie
 - id: am_follow_hvac_from_external
-  alias: "Amelie â€“ HVAC follow external temp"
+  alias: "Amelie Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -2083,7 +2083,7 @@
 
 # Justus (kein Fensterkontakt)
 - id: ju_follow_hvac_from_external
-  alias: "Justus â€“ HVAC follow external temp"
+  alias: "Justus Ã¢â‚¬â€œ HVAC follow external temp"
   mode: restart
   trigger:
     - platform: state
@@ -2119,3 +2119,4 @@
           target: { entity_id: climate.0x0cae5ffffed0cb38xx }
           data:
             temperature: "{{ ((tgt/step)|round(0) * step) | round(1) }}"
+

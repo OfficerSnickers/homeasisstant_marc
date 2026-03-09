@@ -1,4 +1,4 @@
-# ===== Heizung: Raum Badezimmer (Package) =====
+﻿# ===== Heizung: Raum Badezimmer (Package) =====
 
 input_boolean:
   heizung_badezimmer:
@@ -8,7 +8,7 @@ climate:
   - platform: generic_thermostat
     name: Heizung Badezimmer (extern)
     heater: input_boolean.heizung_badezimmer    # statt climate.thermostat_badezimmer
-    target_sensor: sensor.thermometer_badeztimmer_temperature   # <- echter Temperatursensor
+    target_sensor: sensor.thermometer_badezimmer_temperature   # <- echter Temperatursensor
     min_temp: 5
     max_temp: 30
     target_temp: 20
@@ -20,7 +20,8 @@ climate:
      
 homeassistant:
   customize:
-    sensor.thermometer_badeztimmer_temperature:
+    sensor.thermometer_badezimmer_temperature:
       display_precision: 1
-    sensor.thermometer_badeztimmer_humidity:
+    sensor.thermometer_badezimmer_humidity:
       display_precision: 1
+
