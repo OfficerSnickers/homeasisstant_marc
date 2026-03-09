@@ -91,7 +91,7 @@
 
 # 2) Modus-Sync: Generic <-> TRV
 - id: wz_sync_mode
-  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -171,7 +171,7 @@
 
 # 3) Temperatur-Sync (beide Richtungen, mit Toleranz & Schrittweite)
 - id: wz_sync_temp
-  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Wohnzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -371,7 +371,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: sz_sync_mode
-  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -430,7 +430,7 @@
       default: []
 
 - id: sz_sync_temp
-  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Schlafzimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -575,7 +575,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: k_sync_mode
-  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -634,7 +634,7 @@
       default: []
 
 - id: k_sync_temp
-  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "KÃƒÂ¼che Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -778,7 +778,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: ez_sync_mode
-  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -837,7 +837,7 @@
       default: []
 
 - id: ez_sync_temp
-  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Esszimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -981,7 +981,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: bad_sync_mode
-  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1040,7 +1040,7 @@
       default: []
 
 - id: bad_sync_temp
-  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Badezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1184,7 +1184,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: akl_sync_mode
-  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1243,7 +1243,7 @@
       default: []
 
 - id: akl_sync_temp
-  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Ankleidezimmer Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1387,7 +1387,7 @@
       data: { value: "{{ ext | round(1) }}" }
 
 - id: am_sync_mode
-  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
+  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus"
   mode: restart
   trigger:
     - platform: state
@@ -1446,7 +1446,7 @@
       default: []
 
 - id: am_sync_temp
-  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Amelie Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1591,7 +1591,7 @@
 
 # GUARD: Modus-Sync mit unterdrÃƒÂ¼cktem OFF-Propagieren (auÃƒÅ¸er bei Nachtabsenkung)
 - id: ju_sync_mode
-  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus (guarded)"
+  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Modus (guarded)"
   mode: restart
   trigger:
     - platform: state
@@ -1663,7 +1663,7 @@
       default: []
 
 - id: ju_sync_temp
-  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
+  alias: "Justus Ã¢â‚¬â€œ Sync TRVÃ¢â€ â€Generic Temperatur"
   mode: restart
   trigger:
     - platform: state
@@ -1780,7 +1780,7 @@
         temp: "{{ trigger.to_state.state }}"
     - service: notify.mobile_app_iphone_16_pro_max_marc
       data:
-        message: "Ã°Å¸â€Â¥ {{ raum }} hat {{ temp }} Ã‚Â°C erreicht. Bitte prÃƒÂ¼fen/lÃƒÂ¼ften."
+        message: "Ã°Å¸â€Â¥ {{ raum }} hat {{ temp }} Ã‚Â°C erreicht. Bitte prÃƒÂ¼fen/lÃƒÂ¼ften."
 
 # ======================================================================
 #  NEU: HVAC-FOLLOW Ã¢â‚¬â€œ heizen, wenn ext <= setpoint - 0.2 Ã‚Â°C
@@ -2119,4 +2119,5 @@
           target: { entity_id: climate.0x0cae5ffffed0cb38xx }
           data:
             temperature: "{{ ((tgt/step)|round(0) * step) | round(1) }}"
+
 
