@@ -17,8 +17,8 @@ climate:
     max_temp: 30
     target_temp: 20
     # feinere Hysterese: bei ~0.2°C Abweichung reagieren
-    cold_tolerance: 0.2
-    hot_tolerance: 0.2
+    cold_tolerance: 0.1
+    hot_tolerance: 0.0
     precision: 0.1
     target_temp_step: 0.1
     ac_mode: false

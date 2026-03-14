@@ -1776,7 +1776,7 @@
       value_template: >
         {% set ext = states('sensor.thermometer_justus_temperature')|float(999) %}
         {% set tgt = state_attr('climate.heizung_justus_extern','temperature')|float(999) %}
-        {{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}
+        {{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}
     - condition: state
       entity_id: climate.0x0cae5ffffed0cb38xx
       state: "off"
@@ -1869,7 +1869,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.thermostat_wohnzimmer }
@@ -1911,7 +1911,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.thermostat_schlafzimmer }
@@ -1953,7 +1953,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.kuche_thermostat }
@@ -1995,7 +1995,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.thermostat_esszimmer }
@@ -2037,7 +2037,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.thermostat_badezimmer }
@@ -2079,7 +2079,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.ankleidezimmer }
@@ -2121,7 +2121,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.thermostat_amelie }
@@ -2160,7 +2160,7 @@
     - choose:
         - conditions:
             - condition: template
-              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.2 }}"
+              value_template: "{{ ext != 999 and tgt != 999 and ext <= tgt - 0.1 }}"
           sequence:
             - service: climate.set_hvac_mode
               target: { entity_id: climate.0x0cae5ffffed0cb38xx }
