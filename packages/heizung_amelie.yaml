@@ -3,9 +3,6 @@
 input_boolean:
   heizung_amelie:
     name: Heizung Amelie
-  nachtabsenkung_amelie:
-    name: Nachtabsenkung Amelie
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

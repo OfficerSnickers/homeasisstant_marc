@@ -2,9 +2,6 @@
 input_boolean:
   heizung_wohnzimmer:
     name: Heizung Wohnzimmer
-  nachtabsenkung_wohnzimmer:
-    name: Nachtabsenkung Wohnzimmer
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

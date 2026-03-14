@@ -3,9 +3,6 @@
 input_boolean:
   heizung_schlafzimmer:
     name: Heizung Schlafzimmer
-  nachtabsenkung_schlafzimmer:
-    name: Nachtabsenkung Schlafzimmer
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

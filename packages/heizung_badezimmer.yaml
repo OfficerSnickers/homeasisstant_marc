@@ -3,9 +3,6 @@
 input_boolean:
   heizung_badezimmer:
     name: Heizung Badezimmer
-  nachtabsenkung_badezimmer:
-    name: Nachtabsenkung Badezimmer
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

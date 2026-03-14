@@ -3,9 +3,6 @@
 input_boolean:
   justus_heizung:
     name: Heizung Justus
-  nachtabsenkung_justus:
-    name: Nachtabsenkung Justus
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

@@ -3,9 +3,6 @@
 input_boolean:
   heizung_esszimmer:
     name: Heizung Esszimmer
-  nachtabsenkung_esszimmer:
-    name: Nachtabsenkung Esszimmer
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

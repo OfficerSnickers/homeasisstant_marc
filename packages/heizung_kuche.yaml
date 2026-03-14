@@ -3,9 +3,6 @@
 input_boolean:
   heizung_kuche:
     name: Heizung Küche
-  nachtabsenkung_kuche:
-    name: Nachtabsenkung Küche
-    icon: mdi:weather-night
 
 climate:
   - platform: generic_thermostat

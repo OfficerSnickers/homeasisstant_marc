@@ -2,40 +2,12 @@
 # Paket: Heizung – Nachtabsenkung (zeitgesteuert, pro Raum)
 # Datei-Empfehlung: /config/packages/heizung_nacht.yaml
 # Inhalt:
-#   - Helpers (input_datetime Start/Ende, input_boolean pro Raum)
+#   - Helpers liegen zentral in packages/heizplan.yaml
 #   - Zwei Automationen: Start = AUS, Ende = wieder HEAT
 # Abhängigkeiten:
 #   - Climate-Entitäten wie in deiner Installation benannt
 #     (z. B. climate.heizung_wohnzimmer_extern, climate.thermostat_wohnzimmer, ...)
 # ===========================================================
-
-input_datetime:
-  heizung_nacht_start:
-    name: Heizung Nacht Start
-    has_date: false
-    has_time: true
-  heizung_nacht_ende:
-    name: Heizung Nacht Ende
-    has_date: false
-    has_time: true
-
-input_boolean:
-  nachtabsenkung_wohnzimmer:
-    name: Nachtabsenkung Wohnzimmer
-  nachtabsenkung_schlafzimmer:
-    name: Nachtabsenkung Schlafzimmer
-  nachtabsenkung_ankleidezimmer:
-    name: Nachtabsenkung Ankleidezimmer
-  nachtabsenkung_kueche:
-    name: Nachtabsenkung Küche
-  nachtabsenkung_amelie:
-    name: Nachtabsenkung Amelie
-  nachtabsenkung_esszimmer:
-    name: Nachtabsenkung Esszimmer
-  nachtabsenkung_badezimmer:
-    name: Nachtabsenkung Badezimmer
-  nachtabsenkung_justus:
-    name: Nachtabsenkung Justus
 
 automation:
   # ----------------------------------------------
